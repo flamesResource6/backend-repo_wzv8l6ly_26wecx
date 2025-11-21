@@ -11,38 +11,55 @@ Model name is converted to lowercase for the collection name:
 - BlogPost -> "blogs" collection
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List, Literal
+from datetime import datetime
 
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
     name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
+    email: EmailStr = Field(..., description="Email address")
+    password_hash: str = Field(..., description="Hashed password")
+    address: Optional[str] = Field(None, description="Address")
     is_active: bool = Field(True, description="Whether user is active")
+    role: Literal["user", "admin"] = Field("user", description="User role")
+
+class Category(BaseModel):
+    name: str
+    slug: str
+    icon: Optional[str] = None
+    description: Optional[str] = None
 
 class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+    title: str
+    description: Optional[str] = None
+    price: float = Field(..., ge=0)
+    category: str
+    images: List[str] = []
+    rating: float = Field(4.5, ge=0, le=5)
+    rating_count: int = 0
+    in_stock: bool = True
+    features: List[str] = []
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Review(BaseModel):
+    product_id: str
+    user_name: str
+    rating: int = Field(..., ge=1, le=5)
+    comment: Optional[str] = None
+    created_at: Optional[datetime] = None
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class CartItem(BaseModel):
+    client_id: str
+    product_id: str
+    qty: int = Field(1, ge=1)
+
+class Order(BaseModel):
+    client_id: str
+    items: List[CartItem]
+    address: str
+    shipping_method: str
+    payment_method: str
+    promo_code: Optional[str] = None
+    subtotal: float
+    shipping: float
+    total: float
+    status: Literal["pending", "paid", "shipped", "delivered", "cancelled"] = "pending"
